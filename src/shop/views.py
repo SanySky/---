@@ -64,6 +64,7 @@ class IndexView(TemplateView):
             )
             .order_by('-product_count')[:3]
         )
+
         limited_products = get_limited_products()
         products_with_discount = [
             product for product in limited_products
@@ -74,12 +75,12 @@ class IndexView(TemplateView):
             if discount:
                 discount_value = Decimal(discount.discount)
                 product.price_after_discount = round(product.price * (1 - discount_value / Decimal(100)), 2)
-
         context['popular_categories'] = popular_categories
         context['product'] = choice(products_with_discount) if products_with_discount else None
         context['seller_products'] = get_cached_popular_products()
         context['limited_products'] = limited_products
         context['banners'] = Banner.objects.filter(active=True)
+
 
         return context
 
