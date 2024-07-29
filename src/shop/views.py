@@ -43,6 +43,8 @@ from django.views.decorators.cache import never_cache
 from django.utils.decorators import method_decorator
 from taggit.models import Tag
 
+from banners.models import Banner
+
 
 @method_decorator(decorator=never_cache, name="get")
 class IndexView(TemplateView):
@@ -54,8 +56,6 @@ class IndexView(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-
-        # Получаем популярные категории
         popular_categories = (
             Category.objects
             .annotate(
@@ -65,28 +65,22 @@ class IndexView(TemplateView):
             .order_by('-product_count')[:3]
         )
 
-        # Получаем ограниченное количество продуктов
         limited_products = get_limited_products()
-
-        # Фильтруем продукты, чтобы оставить только те, у которых есть скидка
         products_with_discount = [
             product for product in limited_products
             if product.product.discounts.exists()
         ]
-
-        # Считаем цену после скидки для продуктов с скидкой
         for product in products_with_discount:
-            discount = product.product.discounts.first()  # Получаем первую скидку
+            discount = product.product.discounts.first()
             if discount:
-                # Приведение discount.discount к Decimal
                 discount_value = Decimal(discount.discount)
                 product.price_after_discount = round(product.price * (1 - discount_value / Decimal(100)), 2)
-
-        # Добавляем данные в контекст
         context['popular_categories'] = popular_categories
         context['product'] = choice(products_with_discount) if products_with_discount else None
         context['seller_products'] = get_cached_popular_products()
         context['limited_products'] = limited_products
+        context['banners'] = Banner.objects.filter(active=True)
+
 
         return context
 
